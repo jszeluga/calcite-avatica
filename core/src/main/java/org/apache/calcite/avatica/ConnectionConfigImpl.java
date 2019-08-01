@@ -128,6 +128,16 @@ public class ConnectionConfigImpl implements ConnectionConfig {
         .getEnum(HostnameVerification.class);
   }
 
+  public String httpProxyHost() {
+    return BuiltInConnectionProperty.HTTP_PROXY_HOST.wrap(properties)
+        .getString();
+  }
+
+  public Integer httpProxyPort() {
+    return BuiltInConnectionProperty.HTTP_PROXY_PORT.wrap(properties)
+        .getInt();
+  }
+
   /** Converts a {@link Properties} object containing (name, value)
    * pairs into a map whose keys are
    * {@link org.apache.calcite.avatica.InternalProperty} objects.

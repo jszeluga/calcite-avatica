@@ -62,6 +62,10 @@ public interface ConnectionConfig {
   String keyPassword();
   /** @see BuiltInConnectionProperty#HOSTNAME_VERIFICATION */
   HostnameVerification hostnameVerification();
+  /** @see BuiltInConnectionProperty#HTTP_PROXY_HOST */
+  String httpProxyHost();
+  /** @see BuiltInConnectionProperty#HTTP_PROXY_PORT */
+  Integer httpProxyPort();
 }
 
 // End ConnectionConfig.java

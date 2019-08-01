@@ -24,6 +24,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.AuthSchemes;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -45,6 +46,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.ssl.TrustStrategy;
 import org.apache.http.util.EntityUtils;
 
 import org.slf4j.Logger;
@@ -67,7 +69,7 @@ import javax.net.ssl.SSLContext;
  */
 public class AvaticaCommonsHttpClientImpl implements AvaticaHttpClient,
     UsernamePasswordAuthenticateable, TrustStoreConfigurable,
-        KeyStoreConfigurable, HostnameVerificationConfigurable {
+        KeyStoreConfigurable, HostnameVerificationConfigurable, HttpProxyConfigurable {
   private static final Logger LOG = LoggerFactory.getLogger(AvaticaCommonsHttpClientImpl.class);
 
   // Some basic exposed configurations
@@ -95,6 +97,8 @@ public class AvaticaCommonsHttpClientImpl implements AvaticaHttpClient,
   protected String keystorePassword = null;
   protected String keyPassword = null;
   protected HostnameVerification hostnameVerification = null;
+  protected String httpProxyHost = null;
+  protected Integer httpProxyPort = null;
 
   public AvaticaCommonsHttpClientImpl(URL url) {
     this.host = new HttpHost(url.getHost(), url.getPort(), url.getProtocol());
@@ -125,11 +129,14 @@ public class AvaticaCommonsHttpClientImpl implements AvaticaHttpClient,
 
   protected Registry<ConnectionSocketFactory> configureSocketFactories() {
     RegistryBuilder<ConnectionSocketFactory> registryBuilder = RegistryBuilder.create();
+
+    //this needs to happen for the proxy
+    configureHttpRegistry(registryBuilder);
+
     if (host.getSchemeName().equalsIgnoreCase("https")) {
       configureHttpsRegistry(registryBuilder);
-    } else {
-      configureHttpRegistry(registryBuilder);
     }
+
     return registryBuilder.build();
   }
 
@@ -162,7 +169,10 @@ public class AvaticaCommonsHttpClientImpl implements AvaticaHttpClient,
   }
 
   protected void loadTrustStore(SSLContextBuilder sslContextBuilder) throws Exception {
-    sslContextBuilder.loadTrustMaterial(truststore, truststorePassword.toCharArray());
+    sslContextBuilder.setProtocol("TLSv1.2");
+    TrustStrategy acceptingTrustStrategy = (cert, s) -> true;
+    sslContextBuilder.loadTrustMaterial(truststore, truststorePassword.toCharArray(),
+            acceptingTrustStrategy);
   }
 
   protected void configureHttpRegistry(RegistryBuilder<ConnectionSocketFactory> registryBuilder) {
@@ -214,6 +224,14 @@ public class AvaticaCommonsHttpClientImpl implements AvaticaHttpClient,
 
       // Create the client with the AuthSchemeRegistry and manager
       HttpPost post = new HttpPost(uri);
+
+      if (httpProxyHost != null && httpProxyPort != null) {
+        System.setProperty("https.protocols", "TLSv1.2");
+        RequestConfig.Builder config = RequestConfig.custom();
+        config.setProxy(new HttpHost(httpProxyHost, httpProxyPort, "http"));
+        post.setConfig(config.build());
+      }
+
       post.setEntity(entity);
 
       try (CloseableHttpResponse response = execute(post, context)) {
@@ -300,6 +318,12 @@ public class AvaticaCommonsHttpClientImpl implements AvaticaHttpClient,
 
   @Override public void setHostnameVerification(HostnameVerification verification) {
     this.hostnameVerification = Objects.requireNonNull(verification);
+    initializeClient();
+  }
+
+  @Override public void setHttpProxy(String host, Integer port) {
+    this.httpProxyHost = Objects.requireNonNull(host);
+    this.httpProxyPort = Objects.requireNonNull(port);
     initializeClient();
   }
 }

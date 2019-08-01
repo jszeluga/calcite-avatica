@@ -102,6 +102,17 @@ public class AvaticaHttpClientFactoryImpl implements AvaticaHttpClientFactory {
           client.getClass().getName());
     }
 
+    if (client instanceof HttpProxyConfigurable) {
+      String httpProxyHost = config.httpProxyHost();
+      Integer httpProxyPort = config.httpProxyPort();
+      if (null != httpProxyHost && null != httpProxyPort) {
+        ((HttpProxyConfigurable) client)
+                .setHttpProxy(httpProxyHost, httpProxyPort);
+      }
+    } else {
+      LOG.debug("{} is not capable of HTTP Proxy requests", client.getClass().getName());
+    }
+
     if (client instanceof UsernamePasswordAuthenticateable) {
       // Shortcircuit quickly if authentication wasn't provided (implies NONE)
       final String authString = config.authentication();

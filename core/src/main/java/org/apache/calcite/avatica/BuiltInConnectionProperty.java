@@ -86,7 +86,13 @@ public enum BuiltInConnectionProperty implements ConnectionProperty {
   KEY_PASSWORD("key_password", Type.STRING, null, false),
 
   HOSTNAME_VERIFICATION("hostname_verification", Type.ENUM, HostnameVerification.STRICT,
-      HostnameVerification.class, false);
+      HostnameVerification.class, false),
+
+  /** HTTP Proxy Hostname */
+  HTTP_PROXY_HOST("http_proxy_host", Type.STRING, null, false),
+
+  /** HTTP Proxy port number */
+  HTTP_PROXY_PORT("http_proxy_port", Type.NUMBER, 0, false);
 
   private final String camelName;
   private final Type type;
